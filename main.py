@@ -59,19 +59,23 @@ def run_training(args: Any) -> None:
     # Map tumor type to binary label
     df["tumor"] = df["tumor_type"].map({"Benign": 0, "Malignant": 1})
 
-    # KFold split
-    """
-    
-    
-    
-    
-        To Do
+    kf = KFold(n_splits=args.num_folds, shuffle=True, random_state=args.seed)
+    fold_results = []
+
+    for fold, (i_train, i_test) in enumerate(kf.split(df)):
+        train_df = df.iloc[i_train].reset_index(drop=True)
+        test_df = df.iloc[i_test].reset_index(drop=True)
+
+
+        val_count = max(1, int(round(0.2 * len(train_df))))
+        if len(train_df) - val_count < 1:
+            val_count = len(train_df) - 1
+        train_df, val_df = train_test_split(
+            train_df,
+            test_size=val_count,
+            shuffle=True,
+            )
         
-        
-        
-        
-        
-    """
         # Initialize datasets and dataloaders
         train_ds = CSVDataset(args, train_df)
         val_ds = CSVDataset(args, val_df)

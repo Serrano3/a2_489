@@ -23,7 +23,8 @@ config_args.add_argument('--image_file', type = str, default = "image.png", help
 
 #----------------------------------- Preprocessing Configs -----------------------------------#
 config_args.add_argument('--seed', type = int, default = 42, help = "seed for reproduciability")
-config_args.add_argument('--image_size', type = int, default = 160, help = "Resize images to dimention image_size X image_size")
+# Resize inputs to 224 ×224×3; normalize; no augmentation
+config_args.add_argument('--image_size', type = int, default = 224, help = "Resize images to dimention image_size X image_size")
 config_args.add_argument('--channel', type = int, default = 3, help = "Number of channels of the input image, 1 for grayscale and 3 for RGB.")
 config_args.add_argument('--norm_mean', type = float, default = 0.5, help = "Mean value for normalization")
 config_args.add_argument('--norm_std', type = float, default = 0.5, help = "STD value for normalization")

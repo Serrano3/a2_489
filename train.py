@@ -91,15 +91,20 @@ def validate(
 
     with torch.no_grad():
         for imgs, labels in dataloader:
-            """
-            
-            
-            To Do
-            
-            
-            """
-            probs = torch.max(outputs, dim=1).values
+            imgs = imgs.to(device)
+            labels = labels.to(device, dtype=torch.float32)
+
+            outputs = model(imgs)
+            loss = criterion(outputs, labels)
+            total_loss += loss.item() * imgs.size(0)
+           
+            probs = outputs[:, 1] if outputs.shape[1] > 1 else outputs.squeeze(-1)
+            pred_classes  = torch.round(probs)
+            true_classes = torch.argmax(labels, dim=1)            
+
             all_probs.extend(probs.cpu().numpy())
+            all_preds.extend(pred_classes.cpu().numpy())
+            all_labels.extend(true_classes.cpu().numpy())
 
     avg_loss = total_loss / len(dataloader.dataset)
     acc, prec, rec, spec, f1, roc_auc, pr_auc = calculate_metrics(all_labels, all_preds, all_probs)
@@ -124,15 +129,24 @@ def test(
             Accuracy, precision, recall, Specificity, F1 score, ROC AUC, and PR AUC.
     """
 
-    """
+    model.eval()
+    all_preds, all_labels, all_probs = [], [], []
     
-    
-    
-    To Do
-    
-    
-    
-    
-    """
+    with torch.no_grad():
+        for imgs, labels in dataloader:
+            imgs = imgs.to(device)
+            labels = labels.to(device, dtype=torch.float32)
+
+            outputs = model(imgs)
+            
+            probs = outputs[:, 1] if outputs.shape[1] > 1 else outputs.squeeze(-1)
+            pred_classes  = torch.round(probs)
+            true_classes = torch.argmax(labels, dim=1)
+            
+            all_probs.extend(probs.cpu().numpy())
+            all_preds.extend(pred_classes .cpu().numpy())
+            all_labels.extend(true_classes.cpu().numpy())
+            
+    acc, prec, rec, spec, f1, roc_auc, pr_auc = calculate_metrics(all_labels, all_preds, all_probs)
     
     return acc, prec, rec, spec, f1, roc_auc, pr_auc

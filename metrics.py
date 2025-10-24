@@ -37,15 +37,31 @@ def calculate_metrics(
         A tuple containing:
         (accuracy, precision, recall, specificity, f1_score, roc_auc, pr_auc)
     """
+    
+    # Accuracy
+    acc  = accuracy_score(y_true, y_pred)
+    
+    # Precision
+    prec = precision_score(y_true, y_pred, zero_division=0)
+    
+    # Recall
+    rec  = recall_score(y_true, y_pred,zero_division=0)
 
-    """
+    # count all the times when the condtion is met:
+    # tn - when class is false and the prediction is false
+    # fp - when the class is false but the prediction is true
+    tn = sum(1 for t, p in zip(y_true, y_pred) if t == 0 and p == 0)
+    fp = sum(1 for t, p in zip(y_true, y_pred) if t == 0 and p == 1)
+
+    # Specificity 
+    spec = tn / (tn + fp + 0) if (tn + fp) > 0 else float("nan")
     
-    
-    
-    To Do
-    
-    
-    
-    """
+    # F1 Score
+    f1 = f1_score(y_true, y_pred, zero_division=0)
+
+    #ROC AUC and PR AUC
+    roc_auc = roc_auc_score(y_true, y_prob)
+    pr_auc  = average_precision_score(y_true, y_prob)
+
 
     return acc, prec, rec, spec, f1, roc_auc, pr_auc
