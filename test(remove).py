@@ -9,4 +9,9 @@ if torch.cuda.is_available():
 """
 $env:USERPROFILE\venvs\torch311\Scripts\Activate.ps1
 
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+& "$env:USERPROFILE\venvs\torch311\Scripts\Activate.ps1"
+
+
+
 """

@@ -1,5 +1,4 @@
 """
-Model 2
 This module defines a convolutional neural network (CNN) architecture for image classification.
 
 The model implements the following architecture:
@@ -36,35 +35,35 @@ class CNNModel(nn.Module):
         # Convolutional block
         self.conv1 = nn.Conv2d(
             in_channels=args.channel,
-            out_channels=64,
-            kernel_size=5,
+            out_channels=32,
+            kernel_size=4,
             padding="same",
         )
 
         self.conv2 = nn.Conv2d(
-            in_channels=64,
-            out_channels=128,
-            kernel_size=3,
+            in_channels=32,
+            out_channels=64,
+            kernel_size=4,
             padding="same",
         )
 
         self.conv3 = nn.Conv2d(
-            in_channels=128,
-            out_channels=256,
-            kernel_size=3,
+            in_channels=64,
+            out_channels=128,
+            kernel_size=4,
             padding="same",
         )
 
         # per block 
-        self.bn1 = nn.BatchNorm2d(64)
+        self.bn1 = nn.BatchNorm2d(32)
         self.relu1 = nn.ReLU(inplace=True)
         self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
         
-        self.bn2 = nn.BatchNorm2d(128)
+        self.bn2 = nn.BatchNorm2d(64)
         self.relu2 = nn.ReLU(inplace=True)
         self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
 
-        self.bn3 = nn.BatchNorm2d(256)
+        self.bn3 = nn.BatchNorm2d(128)
         self.relu3 = nn.ReLU(inplace=True)
         self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)
         
@@ -73,7 +72,7 @@ class CNNModel(nn.Module):
         self.global_pool = nn.AdaptiveAvgPool2d((1, 1))
 
         # Classifier
-        self.fc_out = nn.Linear(256, args.num_classes)
+        self.fc_out = nn.Linear(128, args.num_classes)
         
         self.sigmoid = nn.Sigmoid()
         
