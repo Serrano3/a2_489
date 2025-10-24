@@ -31,6 +31,8 @@ from model import CNNModel
 from train import train_one_epoch, validate, test
 from config import config_args
 from typing import Any
+from train import wbce_pos
+from train import focal_pos
 
 
 def run_training(args: Any) -> None:
@@ -76,6 +78,26 @@ def run_training(args: Any) -> None:
             shuffle=True,
             )
         
+        # WBCE --------------------------------------------------------------
+        Npos = int((train_df["tumor"] == 1).sum())
+        Nneg = int((train_df["tumor"] == 0).sum())
+        Ntot = max(1, Npos + Nneg)
+        w_pos = Nneg / Ntot   
+        w_neg = Npos / Ntot   
+        # --------------------------------------------------------------------
+
+        # # focal_pos --------------------------------------------------------------
+        # Npos = int((train_df["tumor"] == 1).sum())
+        # Nneg = int((train_df["tumor"] == 0).sum())
+        # Ntot = max(1, Npos + Nneg)
+
+        # # Class weights (you can reuse the same scheme you used for WBCE)
+        # alpha_pos = Nneg / Ntot   # weight for positive class
+        # alpha_neg = Npos / Ntot   # weight for negative class
+
+        # gamma = 3.0               # focusing parameter (try 1.0, 2.0, 3.0)
+        # # --------------------------------------------------------------------
+        
         # Initialize datasets and dataloaders
         train_ds = CSVDataset(args, train_df)
         val_ds = CSVDataset(args, val_df)
@@ -87,7 +109,9 @@ def run_training(args: Any) -> None:
 
         # Initialize model, loss, and optimizer
         model = CNNModel(args).to(DEVICE)
-        criterion = torch.nn.BCELoss()
+        #criterion = torch.nn.BCELoss()
+        criterion = lambda out, lab: wbce_pos(out, lab, w_pos, w_neg)
+        #criterion = lambda out, lab: focal_pos(out, lab, alpha_pos, alpha_neg, gamma)
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
         log_records = []

@@ -16,7 +16,49 @@ from torch.utils.data import DataLoader
 from sklearn.metrics import accuracy_score
 from metrics import calculate_metrics
 from typing import Tuple
+import torch.nn.functional as F
 
+def wbce_pos(outputs: torch.Tensor, labels: torch.Tensor, w_pos: float, w_neg: float) -> torch.Tensor:
+    """Weighted BCE on the positive-class probability P(y=1)."""
+    p = (outputs[:, 1]).clamp(1e-7, 1-1e-7)  # P(class=1), already sigmoid
+    y = labels[:, 1]                          # one-hot -> positive column
+    weight = torch.where(
+        y == 1,
+        torch.tensor(w_pos, device=p.device),
+        torch.tensor(w_neg, device=p.device),
+    )
+    return F.binary_cross_entropy(p, y, weight=weight)
+
+import torch.nn.functional as F
+def focal_pos(
+    outputs: torch.Tensor,
+    labels: torch.Tensor,
+    alpha_pos: float,
+    alpha_neg: float,
+    gamma: float = 2.0,
+) -> torch.Tensor:
+    """
+    Focal loss on P(y=1) with class weights alpha_pos/alpha_neg and focusing gamma>0.
+    - outputs: probs (B,2) after Sigmoid, column 1 is P(y=1)
+    - labels:  one-hot (B,2), column 1 is y in {0,1}
+    """
+    eps = 1e-7
+    p = (outputs[:, 1]).clamp(eps, 1 - eps)   # P(y=1)
+    y = labels[:, 1]                          # 0/1
+
+    # alpha per-sample
+    alpha = torch.where(
+        y == 1,
+        torch.as_tensor(alpha_pos, device=p.device, dtype=p.dtype),
+        torch.as_tensor(alpha_neg, device=p.device, dtype=p.dtype),
+    )
+
+    # p_t = p if y=1 else (1-p)
+    p_t = torch.where(y == 1, p, 1 - p)
+
+    # focal loss: -alpha * (1 - p_t)^gamma * log(p_t)
+    loss = -alpha * (1.0 - p_t).pow(gamma) * torch.log(p_t)
+    return loss.mean()
 
 def train_one_epoch(
     model: nn.Module,
