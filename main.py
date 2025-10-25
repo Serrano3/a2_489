@@ -31,9 +31,38 @@ from model import CNNModel
 from train import train_one_epoch, validate, test
 from config import config_args
 from typing import Any
-from train import wbce_pos
-from train import focal_pos
 
+def wbce_pos(outputs: torch.Tensor, labels: torch.Tensor, w_pos: float, w_neg: float) -> torch.Tensor:
+    p = (outputs[:, 1]).clamp(1e-7, 1 - 1e-7)  
+    y = labels[:, 1]
+    # weight                          
+    w = torch.where(
+        y == 1,
+        torch.tensor(w_pos, device=p.device),
+        torch.tensor(w_neg, device=p.device),
+    )
+    return F.binary_cross_entropy(p, y, weight=w)
+
+def focal_pos(
+    outputs: torch.Tensor,
+    labels: torch.Tensor,
+    alpha_pos: float,
+    alpha_neg: float,
+    gamma: float = 2.0,
+) -> torch.Tensor:
+    # not exactly but close to 0 to 1
+    p = (outputs[:, 1]).clamp(1e-7, 1 - 1e-7)   
+    y = labels[:, 1]                          
+    # alpha 
+    alpha = torch.where(
+        y == 1,
+        torch.as_tensor(alpha_pos, device=p.device, dtype=p.dtype),
+        torch.as_tensor(alpha_neg, device=p.device, dtype=p.dtype),
+    )
+   # focal loss
+    p_t = torch.where(y == 1, p, 1 - p)
+    loss = -alpha * (1.0 - p_t).pow(gamma) * torch.log(p_t)
+    return loss.mean()
 
 def run_training(args: Any) -> None:
     """
@@ -78,7 +107,19 @@ def run_training(args: Any) -> None:
             shuffle=True,
             )
         
-        # # WBCE --------------------------------------------------------------
+        # Initialize datasets and dataloaders
+        train_ds = CSVDataset(args, train_df)
+        val_ds = CSVDataset(args, val_df)
+        test_ds = CSVDataset(args, test_df)
+
+        train_dl = DataLoader(train_ds, batch_size=args.batch, shuffle=True, num_workers=1)
+        val_dl = DataLoader(val_ds, batch_size=args.batch, shuffle=False, num_workers=1)
+        test_dl = DataLoader(test_ds, batch_size=args.batch, shuffle=False, num_workers=1)
+
+        # Initialize model, loss, and optimizer
+        model = CNNModel(args).to(DEVICE)
+        
+        # # wbce_pos --------------------------------------------------------------
         # Npos = int((train_df["tumor"] == 1).sum())
         # Nneg = int((train_df["tumor"] == 0).sum())
         # Ntot = max(1, Npos + Nneg)
@@ -92,23 +133,12 @@ def run_training(args: Any) -> None:
         Ntot = max(1, Npos + Nneg)
 
         # Class weights (you can reuse the same scheme you used for WBCE)
-        alpha_pos = Nneg / Ntot   # weight for positive class
-        alpha_neg = Npos / Ntot   # weight for negative class
+        alpha_pos = Nneg / Ntot   
+        alpha_neg = Npos / Ntot   
 
-        gamma = 2.0               # focusing parameter (try 1.0, 2.0, 3.0)
+        gamma = 1.0               # 1.0, 2.0, 3.0
         # --------------------------------------------------------------------
         
-        # Initialize datasets and dataloaders
-        train_ds = CSVDataset(args, train_df)
-        val_ds = CSVDataset(args, val_df)
-        test_ds = CSVDataset(args, test_df)
-
-        train_dl = DataLoader(train_ds, batch_size=args.batch, shuffle=True, num_workers=1)
-        val_dl = DataLoader(val_ds, batch_size=args.batch, shuffle=False, num_workers=1)
-        test_dl = DataLoader(test_ds, batch_size=args.batch, shuffle=False, num_workers=1)
-
-        # Initialize model, loss, and optimizer
-        model = CNNModel(args).to(DEVICE)
         #criterion = torch.nn.BCELoss()
         #criterion = lambda out, lab: wbce_pos(out, lab, w_pos, w_neg)
         criterion = lambda out, lab: focal_pos(out, lab, alpha_pos, alpha_neg, gamma)

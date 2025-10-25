@@ -38,4 +38,4 @@ config_args.add_argument('--patience', type = int, default = 5, help = "# of epo
 config_args.add_argument('--lr', type = float, default = 1e-5, help = "learning rate")
 config_args.add_argument('--output_dir', type = str, default = "./outputs", help = "The root directory of the outputs")
 config_args.add_argument('--device_name', type = str, default = "0", help = "The available gpu in the cluster, check with nvidia_smi")
-config_args.add_argument('--version', type = str, default = "Model_2", help = "The name of the version run (creates a directory based on the name).")
+config_args.add_argument('--version', type = str, default = "Model_3", help = "The name of the version run (creates a directory based on the name).")
